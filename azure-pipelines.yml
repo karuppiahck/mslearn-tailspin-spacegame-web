@@ -1,3 +1,8 @@
+
+# ASP.NET Core (.NET Framework)
+# Build and test ASP.NET Core projects targeting the full .NET Framework.
+# Add steps that publish symbols, save build artifacts, and more:
+# https://docs.microsoft.com/azure/devops/pipelines/languages/dotnet-core
 trigger:
 - '*'
 
@@ -12,10 +17,11 @@ variables:
   dotnetSdkVersion: '3.1.100'
 
 steps:
+
 - task: UseDotNet@2
-  displayName: 'Use .NET Core SDK $(dotnetSdkVersion)'
+  displayName: 'Use .NET Core SDK 2.1.505 for SonarCloud'
   inputs:
-    version: '$(dotnetSdkVersion)'
+    version: '2.1.505'
 
 - task: UseDotNet@2
   displayName: 'Use .NET Core SDK 2.1.505 for SonarCloud'
@@ -37,11 +43,19 @@ steps:
   displayName: 'Write build info'
   workingDirectory: $(wwwrootDir)
 
-- task: DotNetCoreCLI@2
-  displayName: 'Restore project dependencies'
+
+- task: SonarCloudPrepare@1
+  displayName: 'Prepare SonarCloud analysis'
   inputs:
-    command: 'restore'
-    projects: '**/*.csproj'
+    SonarCloud: 'SonarCloud connection 1'
+    organization: '$(SonarOrganization)'
+    scannerMode: 'MSBuild'
+    projectKey: '$(SonarProjectKey)'
+    projectName: '$(SonarProjectName)'
+    projectVersion: '$(Build.BuildNumber)'
+    extraProperties: |
+     sonar.cs.opencover.reportsPaths=$(Build.SourcesDirectory)/TestResults/Coverage/coverage.opencover.xml
+     sonar.exclusions=**/wwwroot/lib/**/*
 
 - task: SonarCloudPrepare@1
   displayName: 'Prepare SonarCloud analysis'
@@ -90,6 +104,9 @@ steps:
 
 - task: SonarCloudAnalyze@1
   displayName: 'Run SonarCloud code analysis'
+  
+- task: SonarCloudPublish@1
+  displayName: 'Publish SonarCloud quality gate results'
   condition: |
     and
     (
